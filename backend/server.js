@@ -3,6 +3,7 @@ const cors = require('cors');
 const db = require('./db/init');
 const authRoutes = require('./routes/auth');
 const postRoutes = require('./routes/posts');
+const commentRoutes = require('./routes/comments');
 
 const app = express();
 
@@ -12,6 +13,7 @@ app.use(express.json());
 // 路由挂载
 app.use('/api/auth', authRoutes);
 app.use('/api/posts', postRoutes);
+app.use('/api', commentRoutes);
 
 // 获取所有分类
 app.get('/api/categories', (req, res) => {
