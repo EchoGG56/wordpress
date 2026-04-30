@@ -14,6 +14,26 @@ router.post('/register', (req, res) => {
     return res.status(400).json({ error: '请填写所有必填字段' });
   }
 
+  // 邮箱格式校验
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    return res.status(400).json({ error: '邮箱格式不正确' });
+  }
+
+  // 密码强度校验：至少8位，包含大写、小写字母和特殊字符
+  if (password.length < 8) {
+    return res.status(400).json({ error: '密码至少需要8位字符' });
+  }
+  if (!/[A-Z]/.test(password)) {
+    return res.status(400).json({ error: '密码需包含至少一个大写字母' });
+  }
+  if (!/[a-z]/.test(password)) {
+    return res.status(400).json({ error: '密码需包含至少一个小写字母' });
+  }
+  if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?~`]/.test(password)) {
+    return res.status(400).json({ error: '密码需包含至少一个特殊字符' });
+  }
+
   const existing = db.prepare('SELECT id FROM users WHERE email = ? OR username = ?').get(email, username);
   if (existing) {
     return res.status(400).json({ error: '用户名或邮箱已存在' });

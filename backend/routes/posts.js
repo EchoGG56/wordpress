@@ -27,7 +27,7 @@ router.get('/', (req, res) => {
   `).get(...params).count;
 
   const posts = db.prepare(`
-    SELECT p.id, p.title, p.excerpt, p.cover_image, p.status, p.created_at, p.updated_at,
+    SELECT p.id, p.title, p.content, p.excerpt, p.cover_image, p.status, p.created_at, p.updated_at,
            u.username as author, c.name as category, c.slug as category_slug
     FROM posts p
     LEFT JOIN users u ON p.author_id = u.id

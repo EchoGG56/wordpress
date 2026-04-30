@@ -158,6 +158,11 @@ body {
   border-color: var(--accent-cyan);
   box-shadow: var(--glow-cyan);
 }
+.btn-ghost.filter-active {
+  border-color: var(--accent-cyan);
+  color: var(--accent-cyan);
+  box-shadow: var(--glow-cyan);
+}
 .btn-primary {
   background: var(--gradient-1);
   color: #000;
@@ -1036,6 +1041,12 @@ body {
 <section class="page" id="page-articles">
   <div style="padding: 2rem 0;">
     <h2 class="section-title reveal">最新文章</h2>
+    <div class="category-filter reveal" style="display:flex;gap:0.8rem;justify-content:center;margin-bottom:2rem;flex-wrap:wrap;">
+      <button class="btn btn-ghost filter-active" onclick="filterByCategory('')">全部</button>
+      <button class="btn btn-ghost" onclick="filterByCategory('tech')">技术</button>
+      <button class="btn btn-ghost" onclick="filterByCategory('life')">生活</button>
+      <button class="btn btn-ghost" onclick="filterByCategory('essay')">随笔</button>
+    </div>
     <div class="articles-grid" id="articlesGrid"></div>
   </div>
 </section>
@@ -1200,10 +1211,10 @@ body {
     </div>
     <div class="footer-col">
       <h4>分类</h4>
-      <a href="#">前端开发</a>
-      <a href="#">后端开发</a>
-      <a href="#">人工智能</a>
-      <a href="#">系统架构</a>
+      <a href="#articles" onclick="filterByCategory('tech')">技术</a>
+      <a href="#articles" onclick="filterByCategory('life')">生活</a>
+      <a href="#articles" onclick="filterByCategory('essay')">随笔</a>
+      <a href="#articles" onclick="filterByCategory('')">全部文章</a>
     </div>
     <div class="footer-col">
       <h4>联系我们</h4>
@@ -1263,6 +1274,15 @@ async function handleRegister(e) {
   const username = document.getElementById('regUsername').value;
   const email = document.getElementById('regEmail').value;
   const password = document.getElementById('regPassword').value;
+
+  // 前端校验
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) { showToast('邮箱格式不正确', 'error'); return; }
+  if (password.length < 8) { showToast('密码至少需要8位字符', 'error'); return; }
+  if (!/[A-Z]/.test(password)) { showToast('密码需包含至少一个大写字母', 'error'); return; }
+  if (!/[a-z]/.test(password)) { showToast('密码需包含至少一个小写字母', 'error'); return; }
+  if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?~`]/.test(password)) { showToast('密码需包含至少一个特殊字符', 'error'); return; }
+
   try {
     const data = await api('/auth/register', { method: 'POST', body: JSON.stringify({ username, email, password }) });
     if (data) {
@@ -1319,9 +1339,11 @@ function toggleTheme() {
 }
 
 // ===== Posts API =====
-async function loadPostsFromAPI() {
+async function loadPostsFromAPI(categorySlug) {
   try {
-    const data = await api('/posts?limit=20');
+    let url = '/posts?limit=20';
+    if (categorySlug) url += '&category=' + categorySlug;
+    const data = await api(url);
     if (data && data.posts && data.posts.length > 0) {
       const gradients = [
         'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
@@ -1334,12 +1356,13 @@ async function loadPostsFromAPI() {
       return data.posts.map((post, i) => ({
         id: post.id, title: post.title,
         excerpt: post.excerpt || post.content.substring(0, 100) + '...',
-        author: post.author_name || '匿名',
-        avatar: (post.author_name || '匿')[0],
+        author: post.author || '匿名',
+        avatar: (post.author || '匿')[0],
         date: post.created_at ? post.created_at.split('T')[0] : new Date().toISOString().split('T')[0],
-        readTime: Math.ceil(post.content.length / 500) + ' 分钟',
-        category: post.category_name || '未分类',
-        tags: post.tags || [],
+        readTime: Math.ceil((post.content || '').length / 500) + ' 分钟',
+        category: post.category || '未分类',
+        category_slug: post.category_slug || '',
+        tags: post.tags || [post.category || '技术'].filter(Boolean),
         gradient: gradients[i % gradients.length],
         content: post.content
       }));
@@ -1385,7 +1408,7 @@ async function loadAdminPosts() {
     const data = await api('/posts?limit=50');
     if (data && data.posts) {
       tbody.innerHTML = data.posts.map(post => `
-        <tr><td>${post.title}</td><td>${post.category_name || '未分类'}</td>
+        <tr><td>${post.title}</td><td>${post.category || '未分类'}</td>
         <td><span class="status-badge ${post.status}">${post.status === 'published' ? '已发布' : '草稿'}</span></td>
         <td>${post.created_at ? post.created_at.split(' ')[0] : '-'}</td>
         <td><button class="btn btn-ghost" onclick="deletePost(${post.id})" style="color:#f5576c;font-size:0.75rem;">删除</button></td></tr>
@@ -1583,6 +1606,22 @@ function renderArticles() {
       </div>
     </div>
   `).join('');
+}
+
+let currentCategoryFilter = '';
+async function filterByCategory(slug) {
+  currentCategoryFilter = slug;
+  // 更新按钮高亮
+  document.querySelectorAll('.category-filter button').forEach(btn => btn.classList.remove('filter-active'));
+  const btns = document.querySelectorAll('.category-filter button');
+  const slugMap = ['', 'tech', 'life', 'essay'];
+  const idx = slugMap.indexOf(slug);
+  if (idx >= 0 && btns[idx]) btns[idx].classList.add('filter-active');
+
+  const remotePosts = await loadPostsFromAPI(slug);
+  if (remotePosts) { articles.length = 0; articles.push(...remotePosts); }
+  renderArticles();
+  navigate('articles');
 }
 
 // ===== Article Detail =====
