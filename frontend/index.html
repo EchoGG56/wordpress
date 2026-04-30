@@ -1099,6 +1099,192 @@ body {
 </footer>
 
 <script>
+// ===== API Configuration =====
+const API_BASE = 'http://localhost:3000/api';
+let currentUser = null;
+let authToken = localStorage.getItem('blog_token');
+
+async function api(endpoint, options = {}) {
+  const headers = { 'Content-Type': 'application/json' };
+  if (authToken) headers['Authorization'] = 'Bearer ' + authToken;
+  try {
+    const res = await fetch(API_BASE + endpoint, { ...options, headers });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || '请求失败');
+    return data;
+  } catch (err) {
+    if (err.message === 'Failed to fetch') {
+      console.warn('后端未连接，使用本地数据');
+      return null;
+    }
+    throw err;
+  }
+}
+
+// ===== Auth Functions =====
+async function handleLogin(e) {
+  e.preventDefault();
+  const email = document.getElementById('loginEmail').value;
+  const password = document.getElementById('loginPassword').value;
+  try {
+    const data = await api('/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) });
+    if (data) {
+      authToken = data.token;
+      currentUser = data.user;
+      localStorage.setItem('blog_token', authToken);
+      updateAuthUI();
+      closeModal();
+      showToast('登录成功！欢迎回来，' + currentUser.username);
+    }
+  } catch (err) { showToast(err.message, 'error'); }
+}
+
+async function handleRegister(e) {
+  e.preventDefault();
+  const username = document.getElementById('regUsername').value;
+  const email = document.getElementById('regEmail').value;
+  const password = document.getElementById('regPassword').value;
+  try {
+    const data = await api('/auth/register', { method: 'POST', body: JSON.stringify({ username, email, password }) });
+    if (data) {
+      authToken = data.token;
+      currentUser = data.user;
+      localStorage.setItem('blog_token', authToken);
+      updateAuthUI();
+      closeModal();
+      showToast('注册成功！欢迎，' + currentUser.username);
+    }
+  } catch (err) { showToast(err.message, 'error'); }
+}
+
+async function checkAuth() {
+  if (!authToken) return;
+  try {
+    const data = await api('/auth/me');
+    if (data) { currentUser = data.user; updateAuthUI(); }
+  } catch { authToken = null; localStorage.removeItem('blog_token'); }
+}
+
+function logout() {
+  authToken = null; currentUser = null;
+  localStorage.removeItem('blog_token');
+  updateAuthUI();
+  showToast('已退出登录');
+  navigate('home');
+}
+
+function updateAuthUI() {
+  const actions = document.querySelector('.nav-actions');
+  if (currentUser) {
+    actions.innerHTML = `
+      <span style="color:var(--accent-cyan);font-weight:600;">${currentUser.username}</span>
+      <button class="btn btn-ghost" onclick="navigate('admin')">管理</button>
+      <button class="btn btn-ghost" onclick="logout()">退出</button>
+      <button class="btn-icon" id="themeToggle">🌙</button>`;
+  } else {
+    actions.innerHTML = `
+      <button class="btn btn-ghost" onclick="openModal('login')">登录</button>
+      <button class="btn btn-primary" onclick="openModal('register')">注册</button>
+      <button class="btn-icon" id="themeToggle">🌙</button>`;
+  }
+  document.getElementById('themeToggle').addEventListener('click', toggleTheme);
+}
+
+function toggleTheme() {
+  const html = document.documentElement;
+  const current = html.getAttribute('data-theme');
+  const next = current === 'light' ? 'dark' : 'light';
+  html.setAttribute('data-theme', next === 'dark' ? '' : 'light');
+  if (next === 'dark') html.removeAttribute('data-theme');
+  document.getElementById('themeToggle').textContent = next === 'light' ? '☀️' : '🌙';
+}
+
+// ===== Posts API =====
+async function loadPostsFromAPI() {
+  try {
+    const data = await api('/posts?limit=20');
+    if (data && data.posts && data.posts.length > 0) {
+      const gradients = [
+        'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+        'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+        'linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%)',
+        'linear-gradient(135deg, #89f7fe 0%, #66a6ff 100%)',
+        'linear-gradient(135deg, #fa709a 0%, #fee140 100%)'
+      ];
+      return data.posts.map((post, i) => ({
+        id: post.id, title: post.title,
+        excerpt: post.excerpt || post.content.substring(0, 100) + '...',
+        author: post.author_name || '匿名',
+        avatar: (post.author_name || '匿')[0],
+        date: post.created_at ? post.created_at.split('T')[0] : new Date().toISOString().split('T')[0],
+        readTime: Math.ceil(post.content.length / 500) + ' 分钟',
+        category: post.category_name || '未分类',
+        tags: post.tags || [],
+        gradient: gradients[i % gradients.length],
+        content: post.content
+      }));
+    }
+  } catch (e) { console.warn('加载远程文章失败，使用本地数据'); }
+  return null;
+}
+
+async function handleCreatePost(e) {
+  e.preventDefault();
+  if (!currentUser) { showToast('请先登录', 'error'); return; }
+  const title = document.getElementById('postTitle').value;
+  const category_id = document.getElementById('postCategory').value;
+  const content = document.getElementById('postContent').value;
+  try {
+    const data = await api('/posts', { method: 'POST', body: JSON.stringify({ title, content, category_id: parseInt(category_id) || null, status: 'published', excerpt: content.substring(0, 150) }) });
+    if (data) {
+      showToast('文章发布成功！');
+      document.getElementById('postTitle').value = '';
+      document.getElementById('postContent').value = '';
+      const remotePosts = await loadPostsFromAPI();
+      if (remotePosts) { articles.length = 0; articles.push(...remotePosts); }
+      renderArticles(); loadAdminPosts();
+    }
+  } catch (err) { showToast(err.message, 'error'); }
+}
+
+async function deletePost(id) {
+  if (!confirm('确定删除这篇文章吗？')) return;
+  try {
+    await api('/posts/' + id, { method: 'DELETE' });
+    showToast('文章已删除');
+    const remotePosts = await loadPostsFromAPI();
+    if (remotePosts) { articles.length = 0; articles.push(...remotePosts); }
+    renderArticles(); loadAdminPosts();
+  } catch (err) { showToast(err.message, 'error'); }
+}
+
+async function loadAdminPosts() {
+  const tbody = document.getElementById('adminPostsList');
+  if (!tbody) return;
+  try {
+    const data = await api('/posts?limit=50');
+    if (data && data.posts) {
+      tbody.innerHTML = data.posts.map(post => `
+        <tr><td>${post.title}</td><td>${post.category_name || '未分类'}</td>
+        <td><span class="status-badge ${post.status}">${post.status === 'published' ? '已发布' : '草稿'}</span></td>
+        <td>${post.created_at ? post.created_at.split(' ')[0] : '-'}</td>
+        <td><button class="btn btn-ghost" onclick="deletePost(${post.id})" style="color:#f5576c;font-size:0.75rem;">删除</button></td></tr>
+      `).join('');
+    }
+  } catch (e) {
+    tbody.innerHTML = articles.map(a => `<tr><td>${a.title}</td><td>${a.category}</td><td><span class="status-badge published">已发布</span></td><td>${a.date}</td><td>-</td></tr>`).join('');
+  }
+}
+
+function showToast(message, type = 'success') {
+  const toast = document.createElement('div');
+  toast.style.cssText = `position:fixed;bottom:2rem;right:2rem;z-index:10000;padding:1rem 1.5rem;border-radius:8px;background:${type === 'error' ? 'rgba(239,68,68,0.9)' : 'rgba(0,240,255,0.9)'};color:${type === 'error' ? '#fff' : '#0a0e1a'};font-weight:600;font-size:0.875rem;backdrop-filter:blur(10px);box-shadow:0 4px 20px rgba(0,0,0,0.3);transition:opacity 0.3s;`;
+  toast.textContent = message;
+  document.body.appendChild(toast);
+  setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => toast.remove(), 300); }, 2700);
+}
+
 // ===== Articles Data =====
 const articles = [
   {
@@ -1350,15 +1536,8 @@ document.getElementById('modalOverlay').addEventListener('click', (e) => {
   if (e.target === e.currentTarget) closeModal();
 });
 
-// ===== Theme Toggle =====
-document.getElementById('themeToggle').addEventListener('click', () => {
-  const html = document.documentElement;
-  const current = html.getAttribute('data-theme');
-  const next = current === 'light' ? 'dark' : 'light';
-  html.setAttribute('data-theme', next === 'dark' ? '' : 'light');
-  if (next === 'dark') html.removeAttribute('data-theme');
-  document.getElementById('themeToggle').textContent = next === 'light' ? '☀️' : '🌙';
-});
+// ===== Theme Toggle (initial) =====
+document.getElementById('themeToggle').addEventListener('click', toggleTheme);
 
 // ===== Hamburger Menu =====
 document.getElementById('hamburger').addEventListener('click', () => {
