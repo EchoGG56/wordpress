@@ -1,0 +1,1398 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TechBlog - 探索技术的无限可能</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ===== CSS Variables & Reset ===== */
+:root {
+  --bg-primary: #0a0e1a;
+  --bg-secondary: #111827;
+  --bg-card: rgba(17, 24, 39, 0.7);
+  --text-primary: #f0f4ff;
+  --text-secondary: #94a3b8;
+  --accent-cyan: #00f0ff;
+  --accent-magenta: #f0f;
+  --accent-purple: #a855f7;
+  --gradient-1: linear-gradient(135deg, #00f0ff, #a855f7);
+  --gradient-2: linear-gradient(135deg, #f0f, #a855f7);
+  --gradient-3: linear-gradient(135deg, #00f0ff, #f0f);
+  --glass: rgba(15, 23, 42, 0.75);
+  --glass-border: rgba(0, 240, 255, 0.15);
+  --glow-cyan: 0 0 20px rgba(0, 240, 255, 0.3);
+  --glow-magenta: 0 0 20px rgba(255, 0, 255, 0.3);
+  --radius: 16px;
+  --radius-sm: 8px;
+  --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  --font-heading: 'Inter', sans-serif;
+  --font-body: 'Inter', sans-serif;
+}
+
+[data-theme="light"] {
+  --bg-primary: #f8fafc;
+  --bg-secondary: #ffffff;
+  --bg-card: rgba(255, 255, 255, 0.8);
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --glass: rgba(255, 255, 255, 0.8);
+  --glass-border: rgba(0, 240, 255, 0.25);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: var(--font-body);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  line-height: 1.6;
+  overflow-x: hidden;
+  transition: var(--transition);
+}
+
+/* ===== Scrollbar ===== */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--bg-primary); }
+::-webkit-scrollbar-thumb { background: var(--accent-cyan); border-radius: 3px; }
+
+/* ===== Background Particles ===== */
+.particles {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+.particle {
+  position: absolute;
+  width: 4px; height: 4px;
+  border-radius: 50%;
+  animation: float-particle linear infinite;
+  opacity: 0.4;
+}
+.particle:nth-child(odd) { background: var(--accent-cyan); }
+.particle:nth-child(even) { background: var(--accent-magenta); }
+
+@keyframes float-particle {
+  0% { transform: translateY(100vh) rotate(0deg); opacity: 0; }
+  10% { opacity: 0.6; }
+  90% { opacity: 0.6; }
+  100% { transform: translateY(-10vh) rotate(720deg); opacity: 0; }
+}
+
+/* ===== Navbar ===== */
+.navbar {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 1000;
+  padding: 1rem 2rem;
+  background: var(--glass);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--glass-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition: var(--transition);
+}
+.navbar .logo {
+  font-size: 1.5rem;
+  font-weight: 800;
+  background: var(--gradient-1);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  cursor: pointer;
+  letter-spacing: -0.5px;
+}
+.nav-links {
+  display: flex;
+  gap: 2rem;
+  list-style: none;
+  align-items: center;
+}
+.nav-links a {
+  color: var(--text-secondary);
+  text-decoration: none;
+  font-weight: 500;
+  transition: var(--transition);
+  position: relative;
+  padding: 0.5rem 0;
+}
+.nav-links a:hover, .nav-links a.active {
+  color: var(--accent-cyan);
+}
+.nav-links a::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0;
+  width: 0; height: 2px;
+  background: var(--gradient-1);
+  transition: width 0.3s ease;
+}
+.nav-links a:hover::after, .nav-links a.active::after { width: 100%; }
+
+.nav-actions {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+.btn {
+  padding: 0.6rem 1.4rem;
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: var(--transition);
+  border: none;
+  font-family: var(--font-body);
+}
+.btn-ghost {
+  background: transparent;
+  color: var(--text-primary);
+  border: 1px solid var(--glass-border);
+}
+.btn-ghost:hover {
+  border-color: var(--accent-cyan);
+  box-shadow: var(--glow-cyan);
+}
+.btn-primary {
+  background: var(--gradient-1);
+  color: #000;
+  font-weight: 700;
+}
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--glow-cyan);
+}
+.theme-toggle {
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  border: 1px solid var(--glass-border);
+  background: transparent;
+  color: var(--text-primary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  transition: var(--transition);
+}
+.theme-toggle:hover {
+  border-color: var(--accent-cyan);
+  box-shadow: var(--glow-cyan);
+}
+
+/* Hamburger */
+.hamburger {
+  display: none;
+  flex-direction: column;
+  gap: 5px;
+  cursor: pointer;
+  z-index: 1001;
+}
+.hamburger span {
+  width: 25px; height: 2px;
+  background: var(--text-primary);
+  transition: var(--transition);
+}
+.hamburger.active span:nth-child(1) { transform: rotate(45deg) translate(5px, 5px); }
+.hamburger.active span:nth-child(2) { opacity: 0; }
+.hamburger.active span:nth-child(3) { transform: rotate(-45deg) translate(5px, -5px); }
+
+/* ===== Page Sections ===== */
+.page { display: none; min-height: 100vh; padding-top: 80px; }
+.page.active { display: block; }
+
+/* ===== Hero Section ===== */
+.hero {
+  min-height: calc(100vh - 80px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 4rem 2rem;
+  position: relative;
+}
+.hero::before {
+  content: '';
+  position: absolute;
+  top: 20%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: 600px; height: 600px;
+  background: radial-gradient(circle, rgba(0, 240, 255, 0.1) 0%, transparent 70%);
+  border-radius: 50%;
+  pointer-events: none;
+}
+.hero::after {
+  content: '';
+  position: absolute;
+  bottom: 20%; right: 20%;
+  width: 400px; height: 400px;
+  background: radial-gradient(circle, rgba(255, 0, 255, 0.08) 0%, transparent 70%);
+  border-radius: 50%;
+  pointer-events: none;
+}
+.hero h1 {
+  font-family: var(--font-heading);
+  font-size: clamp(2.5rem, 7vw, 5rem);
+  font-weight: 900;
+  line-height: 1.1;
+  margin-bottom: 1.5rem;
+  background: var(--gradient-3);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: glow-text 3s ease-in-out infinite alternate;
+  position: relative;
+  z-index: 1;
+}
+@keyframes glow-text {
+  0% { filter: drop-shadow(0 0 10px rgba(0, 240, 255, 0.3)); }
+  100% { filter: drop-shadow(0 0 30px rgba(255, 0, 255, 0.4)); }
+}
+.hero .subtitle {
+  font-size: clamp(1rem, 2.5vw, 1.4rem);
+  color: var(--text-secondary);
+  margin-bottom: 2.5rem;
+  max-width: 600px;
+  position: relative;
+  z-index: 1;
+}
+.hero .cta-btn {
+  padding: 1rem 3rem;
+  font-size: 1.1rem;
+  border-radius: 50px;
+  background: var(--gradient-1);
+  color: #000;
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+  transition: var(--transition);
+  position: relative;
+  z-index: 1;
+  font-family: var(--font-body);
+}
+.hero .cta-btn:hover {
+  transform: translateY(-3px) scale(1.05);
+  box-shadow: 0 10px 40px rgba(0, 240, 255, 0.4);
+}
+
+/* Typing animation */
+.typing-wrapper {
+  overflow: hidden;
+  display: inline-block;
+}
+.typing-text {
+  display: inline-block;
+  animation: typing 3s steps(12) 0.5s forwards, blink 0.7s step-end infinite;
+  overflow: hidden;
+  white-space: nowrap;
+  border-right: 3px solid var(--accent-cyan);
+  width: 0;
+}
+@keyframes typing { to { width: 100%; } }
+@keyframes blink { 50% { border-color: transparent; } }
+
+/* ===== Articles Grid ===== */
+.section-title {
+  font-family: var(--font-heading);
+  font-size: 2.2rem;
+  font-weight: 800;
+  text-align: center;
+  margin-bottom: 3rem;
+  background: var(--gradient-1);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.articles-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 2rem;
+  padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+.article-card {
+  background: var(--bg-card);
+  border-radius: var(--radius);
+  border: 1px solid var(--glass-border);
+  overflow: hidden;
+  transition: var(--transition);
+  cursor: pointer;
+  backdrop-filter: blur(10px);
+  position: relative;
+}
+.article-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius);
+  padding: 1px;
+  background: var(--gradient-1);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+.article-card:hover::before { opacity: 1; }
+.article-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 20px 60px rgba(0, 240, 255, 0.15);
+}
+.card-cover {
+  height: 180px;
+  position: relative;
+  overflow: hidden;
+}
+.card-cover .gradient-bg {
+  width: 100%; height: 100%;
+  transition: transform 0.5s ease;
+}
+.article-card:hover .gradient-bg { transform: scale(1.1); }
+.card-body { padding: 1.5rem; }
+.card-tags {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+  flex-wrap: wrap;
+}
+.tag {
+  font-size: 0.7rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: 50px;
+  background: rgba(0, 240, 255, 0.1);
+  color: var(--accent-cyan);
+  border: 1px solid rgba(0, 240, 255, 0.2);
+  font-weight: 600;
+}
+.card-title {
+  font-size: 1.2rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  color: var(--text-primary);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.card-excerpt {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  margin-bottom: 1rem;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.card-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+.card-author {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.avatar {
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  background: var(--gradient-1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  color: #000;
+  font-weight: 700;
+}
+
+/* ===== Article Detail ===== */
+.article-detail {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 3rem 2rem;
+  display: flex;
+  gap: 3rem;
+}
+.article-content { flex: 1; min-width: 0; }
+.article-sidebar {
+  width: 220px;
+  flex-shrink: 0;
+  position: sticky;
+  top: 100px;
+  align-self: flex-start;
+}
+.article-detail h1 {
+  font-family: var(--font-heading);
+  font-size: 2.5rem;
+  font-weight: 900;
+  margin-bottom: 1rem;
+  line-height: 1.2;
+  background: var(--gradient-3);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.article-meta {
+  display: flex;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  flex-wrap: wrap;
+}
+.article-meta span { display: flex; align-items: center; gap: 0.3rem; }
+.article-body h2 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 2rem 0 1rem;
+  color: var(--text-primary);
+}
+.article-body h3 {
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin: 1.5rem 0 0.75rem;
+  color: var(--text-primary);
+}
+.article-body p {
+  margin-bottom: 1.2rem;
+  color: var(--text-secondary);
+  line-height: 1.8;
+}
+.article-body code {
+  background: rgba(0, 240, 255, 0.1);
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  color: var(--accent-cyan);
+}
+.article-body pre {
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-sm);
+  padding: 1.5rem;
+  margin: 1.5rem 0;
+  overflow-x: auto;
+  font-size: 0.85rem;
+  line-height: 1.6;
+}
+.article-body pre code {
+  background: none;
+  padding: 0;
+  color: var(--accent-cyan);
+}
+.article-body blockquote {
+  border-left: 3px solid var(--accent-cyan);
+  padding: 1rem 1.5rem;
+  margin: 1.5rem 0;
+  background: rgba(0, 240, 255, 0.05);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  color: var(--text-secondary);
+  font-style: italic;
+}
+.toc-title {
+  font-weight: 700;
+  margin-bottom: 1rem;
+  color: var(--text-primary);
+  font-size: 0.9rem;
+}
+.toc-list {
+  list-style: none;
+  font-size: 0.85rem;
+}
+.toc-list li {
+  padding: 0.4rem 0;
+  border-left: 2px solid var(--glass-border);
+  padding-left: 1rem;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: var(--transition);
+}
+.toc-list li:hover {
+  color: var(--accent-cyan);
+  border-left-color: var(--accent-cyan);
+}
+.related-articles {
+  margin-top: 4rem;
+  padding-top: 2rem;
+  border-top: 1px solid var(--glass-border);
+}
+.related-articles h3 {
+  font-size: 1.3rem;
+  font-weight: 700;
+  margin-bottom: 1.5rem;
+}
+.related-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 1rem;
+}
+.related-card {
+  padding: 1.2rem;
+  background: var(--bg-card);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: var(--transition);
+}
+.related-card:hover {
+  border-color: var(--accent-cyan);
+  transform: translateY(-2px);
+}
+.related-card h4 { font-size: 0.95rem; margin-bottom: 0.4rem; }
+.related-card p { font-size: 0.8rem; color: var(--text-secondary); }
+
+/* ===== Admin Panel ===== */
+.admin-panel {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 3rem;
+}
+.stat-card {
+  background: var(--bg-card);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+  text-align: center;
+  backdrop-filter: blur(10px);
+  transition: var(--transition);
+}
+.stat-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--glow-cyan);
+}
+.stat-number {
+  font-size: 2.5rem;
+  font-weight: 900;
+  background: var(--gradient-1);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.stat-label {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  margin-top: 0.3rem;
+}
+.admin-section {
+  background: var(--bg-card);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius);
+  padding: 2rem;
+  margin-bottom: 2rem;
+  backdrop-filter: blur(10px);
+}
+.admin-section h3 {
+  font-size: 1.3rem;
+  font-weight: 700;
+  margin-bottom: 1.5rem;
+  color: var(--text-primary);
+}
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+.admin-table th, .admin-table td {
+  padding: 0.9rem 1rem;
+  text-align: left;
+  border-bottom: 1px solid var(--glass-border);
+}
+.admin-table th {
+  color: var(--text-secondary);
+  font-weight: 600;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.admin-table td { color: var(--text-primary); }
+.status-badge {
+  padding: 0.25rem 0.75rem;
+  border-radius: 50px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+.status-published {
+  background: rgba(0, 240, 255, 0.1);
+  color: var(--accent-cyan);
+}
+.status-draft {
+  background: rgba(255, 0, 255, 0.1);
+  color: var(--accent-magenta);
+}
+.form-group {
+  margin-bottom: 1.2rem;
+}
+.form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+.form-input, .form-select, .form-textarea {
+  width: 100%;
+  padding: 0.8rem 1rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--glass-border);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  font-family: var(--font-body);
+  transition: var(--transition);
+}
+.form-input:focus, .form-select:focus, .form-textarea:focus {
+  outline: none;
+  border-color: var(--accent-cyan);
+  box-shadow: 0 0 0 3px rgba(0, 240, 255, 0.1);
+}
+.form-textarea { min-height: 200px; resize: vertical; }
+
+/* ===== About Page ===== */
+.about-section {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 4rem 2rem;
+  text-align: center;
+}
+.about-section h1 {
+  font-size: 2.5rem;
+  font-weight: 900;
+  margin-bottom: 1.5rem;
+  background: var(--gradient-3);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.about-section p {
+  color: var(--text-secondary);
+  font-size: 1.1rem;
+  line-height: 1.8;
+  margin-bottom: 1.5rem;
+}
+.tech-stack {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: 2rem;
+}
+.tech-item {
+  padding: 0.6rem 1.5rem;
+  border-radius: 50px;
+  border: 1px solid var(--glass-border);
+  color: var(--accent-cyan);
+  font-size: 0.85rem;
+  font-weight: 600;
+  transition: var(--transition);
+}
+.tech-item:hover {
+  background: rgba(0, 240, 255, 0.1);
+  box-shadow: var(--glow-cyan);
+}
+
+/* ===== Modal ===== */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(8px);
+  z-index: 2000;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+.modal-overlay.active {
+  display: flex;
+  opacity: 1;
+}
+.modal {
+  background: var(--bg-secondary);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius);
+  padding: 2.5rem;
+  width: 90%;
+  max-width: 420px;
+  position: relative;
+  transform: translateY(20px);
+  transition: transform 0.3s ease;
+}
+.modal-overlay.active .modal { transform: translateY(0); }
+.modal-close {
+  position: absolute;
+  top: 1rem; right: 1rem;
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 1.5rem;
+  cursor: pointer;
+  transition: var(--transition);
+}
+.modal-close:hover { color: var(--accent-cyan); }
+.modal-tabs {
+  display: flex;
+  gap: 0;
+  margin-bottom: 2rem;
+  border-bottom: 1px solid var(--glass-border);
+}
+.modal-tab {
+  flex: 1;
+  padding: 0.8rem;
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+  border-bottom: 2px solid transparent;
+  font-family: var(--font-body);
+}
+.modal-tab.active {
+  color: var(--accent-cyan);
+  border-bottom-color: var(--accent-cyan);
+}
+.modal-form { display: none; }
+.modal-form.active { display: block; }
+.modal h2 {
+  text-align: center;
+  margin-bottom: 1.5rem;
+  font-size: 1.5rem;
+  background: var(--gradient-1);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.modal .btn-primary {
+  width: 100%;
+  padding: 0.9rem;
+  font-size: 1rem;
+  margin-top: 0.5rem;
+}
+
+/* ===== Footer ===== */
+.footer {
+  background: var(--bg-secondary);
+  border-top: 1px solid var(--glass-border);
+  padding: 4rem 2rem 2rem;
+  margin-top: 4rem;
+}
+.footer-grid {
+  max-width: 1100px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 2rem;
+  margin-bottom: 3rem;
+}
+.footer-col h4 {
+  font-size: 1rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+  color: var(--text-primary);
+}
+.footer-col a {
+  display: block;
+  color: var(--text-secondary);
+  text-decoration: none;
+  padding: 0.3rem 0;
+  font-size: 0.9rem;
+  transition: var(--transition);
+}
+.footer-col a:hover { color: var(--accent-cyan); }
+.social-links {
+  display: flex;
+  gap: 1rem;
+  margin-top: 0.5rem;
+}
+.social-link {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  border: 1px solid var(--glass-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  text-decoration: none;
+  transition: var(--transition);
+  font-size: 0.9rem;
+}
+.social-link:hover {
+  border-color: var(--accent-cyan);
+  color: var(--accent-cyan);
+  box-shadow: var(--glow-cyan);
+}
+.footer-bottom {
+  text-align: center;
+  padding-top: 2rem;
+  border-top: 1px solid var(--glass-border);
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+}
+
+/* ===== Scroll Animations ===== */
+.reveal {
+  opacity: 0;
+  transform: translateY(30px);
+  transition: opacity 0.6s ease, transform 0.6s ease;
+}
+.reveal.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ===== Responsive ===== */
+@media (max-width: 768px) {
+  .nav-links {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100vh;
+    background: var(--bg-primary);
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2rem;
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+    z-index: 999;
+  }
+  .nav-links.active { transform: translateX(0); }
+  .hamburger { display: flex; }
+  .articles-grid { grid-template-columns: 1fr; padding: 1rem; }
+  .article-detail { flex-direction: column; padding: 2rem 1rem; }
+  .article-sidebar { width: 100%; position: static; }
+  .hero h1 { font-size: 2.2rem; }
+  .admin-table { font-size: 0.8rem; }
+  .admin-table th, .admin-table td { padding: 0.6rem; }
+  .stats-grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<!-- Particles Background -->
+<div class="particles" id="particles"></div>
+
+<!-- Navbar -->
+<nav class="navbar">
+  <span class="logo" onclick="navigate('home')">TechBlog</span>
+  <ul class="nav-links" id="navLinks">
+    <li><a href="#home" data-page="home" class="active">首页</a></li>
+    <li><a href="#articles" data-page="articles">文章</a></li>
+    <li><a href="#admin" data-page="admin">管理</a></li>
+    <li><a href="#about" data-page="about">关于</a></li>
+  </ul>
+  <div class="nav-actions">
+    <button class="theme-toggle" id="themeToggle" title="切换主题">🌙</button>
+    <button class="btn btn-ghost" onclick="openModal()">登录</button>
+    <button class="btn btn-primary" onclick="openModal('register')">注册</button>
+  </div>
+  <div class="hamburger" id="hamburger">
+    <span></span><span></span><span></span>
+  </div>
+</nav>
+
+<!-- Home Page -->
+<section class="page active" id="page-home">
+  <div class="hero">
+    <h1>探索技术的无限可能</h1>
+    <p class="subtitle">一个现代化的技术博客平台，分享前沿技术见解与实践经验</p>
+    <button class="cta-btn" onclick="navigate('articles')">开始阅读 →</button>
+  </div>
+</section>
+
+<!-- Articles Page -->
+<section class="page" id="page-articles">
+  <div style="padding: 2rem 0;">
+    <h2 class="section-title reveal">最新文章</h2>
+    <div class="articles-grid" id="articlesGrid"></div>
+  </div>
+</section>
+
+<!-- Article Detail Page -->
+<section class="page" id="page-detail">
+  <div class="article-detail">
+    <div class="article-content" id="articleContent"></div>
+    <aside class="article-sidebar" id="articleSidebar"></aside>
+  </div>
+  <div style="max-width:900px;margin:0 auto;padding:0 2rem;">
+    <div class="related-articles">
+      <h3>相关文章推荐</h3>
+      <div class="related-grid" id="relatedArticles"></div>
+    </div>
+  </div>
+</section>
+
+<!-- Admin Page -->
+<section class="page" id="page-admin">
+  <div class="admin-panel">
+    <h2 class="section-title reveal">管理面板</h2>
+    <div class="stats-grid reveal">
+      <div class="stat-card">
+        <div class="stat-number">128</div>
+        <div class="stat-label">文章总数</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number">1,024</div>
+        <div class="stat-label">评论数量</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number">56.8K</div>
+        <div class="stat-label">总访问量</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number">342</div>
+        <div class="stat-label">注册用户</div>
+      </div>
+    </div>
+    <div class="admin-section reveal">
+      <h3>文章管理</h3>
+      <table class="admin-table">
+        <thead>
+          <tr><th>标题</th><th>分类</th><th>状态</th><th>日期</th><th>操作</th></tr>
+        </thead>
+        <tbody id="adminPostsList">
+          <tr><td>深入理解 React 18 并发特性</td><td>前端</td><td><span class="status-badge status-published">已发布</span></td><td>2024-01-15</td><td>-</td></tr>
+          <tr><td>Rust 异步编程实战</td><td>后端</td><td><span class="status-badge status-published">已发布</span></td><td>2024-01-12</td><td>-</td></tr>
+          <tr><td>云原生架构设计模式</td><td>架构</td><td><span class="status-badge status-draft">草稿</span></td><td>2024-01-10</td><td>-</td></tr>
+          <tr><td>AI 大模型微调指南</td><td>AI</td><td><span class="status-badge status-published">已发布</span></td><td>2024-01-08</td><td>-</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="admin-section reveal">
+      <h3>新建文章</h3>
+      <form onsubmit="handleCreatePost(event)">
+        <div class="form-group">
+          <label>文章标题</label>
+          <input type="text" id="postTitle" class="form-input" placeholder="请输入文章标题...">
+        </div>
+        <div class="form-group">
+          <label>分类</label>
+          <select id="postCategory" class="form-select">
+            <option value="1">前端开发</option>
+            <option value="2">后端开发</option>
+            <option value="3">人工智能</option>
+            <option value="4">系统架构</option>
+            <option value="5">DevOps</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>文章内容</label>
+          <textarea id="postContent" class="form-textarea" placeholder="使用 Markdown 格式编写文章内容..."></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary" style="width:100%;padding:0.9rem;" onclick="handleCreatePost(event)">发布文章</button>
+      </form>
+    </div>
+  </div>
+</section>
+
+<!-- About Page -->
+<section class="page" id="page-about">
+  <div class="about-section">
+    <h1 class="reveal">关于 TechBlog</h1>
+    <p class="reveal">TechBlog 是一个面向开发者的现代化技术博客平台。我们致力于分享最前沿的技术见解、最佳实践和深度教程，帮助开发者持续成长。</p>
+    <p class="reveal">无论你是前端工程师、后端开发者、AI 研究员还是全栈极客，这里都有属于你的内容。我们相信，技术的分享让整个社区变得更强大。</p>
+    <p class="reveal" style="font-weight:600;color:var(--accent-cyan);">技术驱动未来，代码改变世界。</p>
+    <div class="tech-stack reveal">
+      <span class="tech-item">React</span>
+      <span class="tech-item">TypeScript</span>
+      <span class="tech-item">Node.js</span>
+      <span class="tech-item">Go</span>
+      <span class="tech-item">Rust</span>
+      <span class="tech-item">Python</span>
+      <span class="tech-item">Docker</span>
+      <span class="tech-item">K8s</span>
+    </div>
+  </div>
+</section>
+
+<!-- Login/Register Modal -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal()">&times;</button>
+    <h2>欢迎回来</h2>
+    <div class="modal-tabs">
+      <button class="modal-tab active" onclick="switchTab('login')">登录</button>
+      <button class="modal-tab" onclick="switchTab('register')">注册</button>
+    </div>
+    <form class="modal-form active" id="loginForm" onsubmit="handleLogin(event)">
+      <div class="form-group">
+        <label>邮箱</label>
+        <input type="email" id="loginEmail" class="form-input" placeholder="请输入邮箱地址">
+      </div>
+      <div class="form-group">
+        <label>密码</label>
+        <input type="password" id="loginPassword" class="form-input" placeholder="请输入密码">
+      </div>
+      <button type="submit" class="btn btn-primary" onclick="handleLogin(event)">登录</button>
+    </form>
+    <form class="modal-form" id="registerForm" onsubmit="handleRegister(event)">
+      <div class="form-group">
+        <label>用户名</label>
+        <input type="text" id="regUsername" class="form-input" placeholder="请输入用户名">
+      </div>
+      <div class="form-group">
+        <label>邮箱</label>
+        <input type="email" id="regEmail" class="form-input" placeholder="请输入邮箱地址">
+      </div>
+      <div class="form-group">
+        <label>密码</label>
+        <input type="password" id="regPassword" class="form-input" placeholder="请输入密码（至少6位）">
+      </div>
+      <button type="submit" class="btn btn-primary" onclick="handleRegister(event)">注册</button>
+    </form>
+  </div>
+</div>
+
+<!-- Footer -->
+<footer class="footer">
+  <div class="footer-grid">
+    <div class="footer-col">
+      <h4>TechBlog</h4>
+      <p style="color:var(--text-secondary);font-size:0.9rem;line-height:1.6;">探索技术的无限可能，与全球开发者一起成长。</p>
+      <div class="social-links">
+        <a href="#" class="social-link" title="GitHub">GH</a>
+        <a href="#" class="social-link" title="Twitter">TW</a>
+        <a href="#" class="social-link" title="Discord">DC</a>
+      </div>
+    </div>
+    <div class="footer-col">
+      <h4>导航</h4>
+      <a href="#home" onclick="navigate('home')">首页</a>
+      <a href="#articles" onclick="navigate('articles')">文章</a>
+      <a href="#about" onclick="navigate('about')">关于</a>
+    </div>
+    <div class="footer-col">
+      <h4>分类</h4>
+      <a href="#">前端开发</a>
+      <a href="#">后端开发</a>
+      <a href="#">人工智能</a>
+      <a href="#">系统架构</a>
+    </div>
+    <div class="footer-col">
+      <h4>联系我们</h4>
+      <a href="#">contact@techblog.dev</a>
+      <a href="#">反馈建议</a>
+      <a href="#">合作洽谈</a>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <p>© 2024 TechBlog. 保留所有权利。用 ❤️ 和 ☕ 构建。</p>
+  </div>
+</footer>
+
+<script>
+// ===== Articles Data =====
+const articles = [
+  {
+    id: 1,
+    title: '深入理解 React 18 并发特性与 Suspense',
+    excerpt: '探索 React 18 引入的并发渲染机制，了解 Suspense、Transition 和自动批处理如何提升应用性能。',
+    author: '林小明',
+    avatar: '林',
+    date: '2024-01-15',
+    readTime: '12 分钟',
+    category: '前端开发',
+    tags: ['React', 'JavaScript', '性能优化'],
+    gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+    content: `<h2>什么是并发渲染</h2><p>React 18 引入了全新的并发渲染引擎，这是 React 架构的一次根本性变革。并发渲染允许 React 同时准备多个版本的 UI，从而实现更流畅的用户体验。</p><blockquote>并发模式不是一个功能，而是一种新的底层机制，它使 React 能够同时准备多个版本的 UI。</blockquote><h2>Suspense 的演进</h2><p>Suspense 在 React 18 中得到了显著增强。它不仅支持代码分割，还支持数据获取场景。通过 Suspense，你可以声明式地指定组件树中某个部分的加载状态。</p><h3>基本用法</h3><pre><code>import { Suspense } from 'react';
+
+function App() {
+  return (
+    &lt;Suspense fallback={&lt;Loading /&gt;}&gt;
+      &lt;DataComponent /&gt;
+    &lt;/Suspense&gt;
+  );
+}</code></pre><h2>useTransition Hook</h2><p>useTransition 是一个让你在不阻塞 UI 的情况下更新状态的 Hook。它将状态更新标记为"过渡"，告诉 React 这些更新可以被中断。</p><p>这对于处理大列表过滤、标签页切换等场景特别有用。用户的直接交互（如输入）始终保持响应，而较慢的渲染则在后台进行。</p><h2>自动批处理</h2><p>React 18 扩展了自动批处理的范围。在之前的版本中，只有在 React 事件处理器中的更新才会被批处理。现在，即使在 Promise、setTimeout 或原生事件处理器中的更新也会被自动批处理。</p>`
+  },
+  {
+    id: 2,
+    title: 'Rust 异步编程：从 Future 到 Tokio 实战',
+    excerpt: '全面解析 Rust 异步编程模型，从 Future trait 的底层原理到 Tokio 运行时的实际应用。',
+    author: '张伟',
+    avatar: '张',
+    date: '2024-01-12',
+    readTime: '18 分钟',
+    category: '后端开发',
+    tags: ['Rust', '异步编程', 'Tokio'],
+    gradient: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+    content: `<h2>Rust 异步编程概述</h2><p>Rust 的异步编程模型是零成本抽象的典范。与其他语言不同，Rust 的 async/await 在编译时被转换为状态机，无需运行时开销。</p><h2>Future Trait 深度解析</h2><p>Future 是 Rust 异步编程的核心 trait。每一个异步操作都实现了 Future trait，它定义了异步计算的最小接口。</p><pre><code>trait Future {
+    type Output;
+    fn poll(self: Pin&lt;&amp;mut Self&gt;, cx: &amp;mut Context&lt;'_&gt;) -&gt; Poll&lt;Self::Output&gt;;
+}</code></pre><h2>Tokio 运行时</h2><p>Tokio 是 Rust 生态中最流行的异步运行时。它提供了多线程调度器、异步 I/O、定时器等核心功能。</p><blockquote>Tokio 的设计哲学是：提供正确的默认行为，同时允许高级用户进行细粒度控制。</blockquote><h2>实战：构建异步 Web 服务</h2><p>让我们用 Tokio + Axum 构建一个高性能的 Web 服务。Axum 是基于 Tokio 的现代 Web 框架，充分利用了 Rust 的类型系统。</p>`
+  },
+  {
+    id: 3,
+    title: '云原生架构设计模式与最佳实践',
+    excerpt: '系统性介绍微服务、服务网格、无服务器等云原生架构模式，以及在生产环境中的最佳实践。',
+    author: '王芳',
+    avatar: '王',
+    date: '2024-01-10',
+    readTime: '15 分钟',
+    category: '系统架构',
+    tags: ['云原生', 'K8s', '微服务'],
+    gradient: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+    content: `<h2>云原生的核心理念</h2><p>云原生不仅仅是把应用部署到云上。它代表了一种全新的软件设计、开发和运维方式，核心理念包括容器化、微服务、声明式API和不可变基础设施。</p><h2>微服务设计模式</h2><p>在实践微服务架构时，有几个关键的设计模式值得掌握：API 网关模式、服务发现、断路器模式、Saga 模式等。</p><h2>Kubernetes 编排实践</h2><p>Kubernetes 已成为容器编排的事实标准。理解其核心概念和最佳实践对于构建可靠的云原生系统至关重要。</p>`
+  },
+  {
+    id: 4,
+    title: 'AI 大模型微调完全指南：从 LoRA 到 QLoRA',
+    excerpt: '详解大语言模型微调技术，包括 LoRA、QLoRA、P-Tuning 等方法的原理与实践。',
+    author: '陈思远',
+    avatar: '陈',
+    date: '2024-01-08',
+    readTime: '20 分钟',
+    category: '人工智能',
+    tags: ['LLM', '微调', 'LoRA'],
+    gradient: 'linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%)',
+    content: `<h2>为什么需要微调</h2><p>预训练大模型虽然具备强大的通用能力，但在特定领域任务上仍然需要微调来提升表现。微调让模型能够适应特定的数据分布和任务需求。</p><h2>LoRA 原理详解</h2><p>LoRA（Low-Rank Adaptation）通过在原始权重矩阵旁添加低秩分解矩阵来实现参数高效微调。它的核心思想是：模型在微调过程中的权重变化具有低秩特性。</p><pre><code># LoRA 伪代码
+W_new = W_original + alpha * (B @ A)
+# B: (d, r), A: (r, k), r << min(d, k)</code></pre><h2>QLoRA: 量化 + LoRA</h2><p>QLoRA 将基础模型量化为 4-bit，然后在量化模型上应用 LoRA。这使得在消费级 GPU 上微调 65B 参数模型成为可能。</p>`
+  },
+  {
+    id: 5,
+    title: 'TypeScript 5.0 新特性深度解读',
+    excerpt: '全面解析 TypeScript 5.0 带来的装饰器、const 类型参数等重要新特性。',
+    author: '李娜',
+    avatar: '李',
+    date: '2024-01-05',
+    readTime: '10 分钟',
+    category: '前端开发',
+    tags: ['TypeScript', '前端', '类型系统'],
+    gradient: 'linear-gradient(135deg, #89f7fe 0%, #66a6ff 100%)',
+    content: `<h2>装饰器正式标准化</h2><p>TypeScript 5.0 最重要的更新之一是对 ECMAScript 装饰器的正式支持。与之前实验性的装饰器实现不同，新的装饰器遵循 TC39 Stage 3 提案。</p><h2>Const 类型参数</h2><p>新增的 const 类型参数允许你在不使用 as const 断言的情况下，推导出更精确的字面量类型。</p><pre><code>function createConfig&lt;const T&gt;(config: T): T {
+  return config;
+}
+// 类型推导为 { name: "app", version: 1 } 而非 { name: string, version: number }
+const cfg = createConfig({ name: "app", version: 1 });</code></pre><h2>性能提升</h2><p>TypeScript 5.0 在编译速度上有显著提升，包体积减少了约 44%。这得益于从 namespace 迁移到 module 的内部重构。</p>`
+  },
+  {
+    id: 6,
+    title: '构建高可用分布式系统：从理论到实践',
+    excerpt: '深入探讨 CAP 定理、一致性协议、分布式事务等核心概念，并分享实战经验。',
+    author: '赵刚',
+    avatar: '赵',
+    date: '2024-01-02',
+    readTime: '16 分钟',
+    category: '系统架构',
+    tags: ['分布式', '高可用', 'Raft'],
+    gradient: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
+    content: `<h2>CAP 定理再思考</h2><p>CAP 定理指出，在网络分区不可避免的情况下，分布式系统必须在一致性（C）和可用性（A）之间做出取舍。但实际情况比这更细微——我们通常讨论的是一致性的程度。</p><h2>Raft 共识算法</h2><p>Raft 是一种为可理解性而设计的共识算法。它将共识问题分解为三个子问题：领导者选举、日志复制和安全性。</p><blockquote>Raft 的设计目标首先是可理解性，其次才是正确性和性能。—— Diego Ongaro</blockquote><h2>分布式事务实践</h2><p>在微服务架构中，跨服务的事务管理是一个核心挑战。常见的解决方案包括：Saga 模式、TCC、可靠消息最终一致性等。</p>`
+  }
+];
+
+// ===== Particles Generation =====
+function createParticles() {
+  const container = document.getElementById('particles');
+  for (let i = 0; i < 30; i++) {
+    const particle = document.createElement('div');
+    particle.className = 'particle';
+    particle.style.left = Math.random() * 100 + '%';
+    particle.style.animationDuration = (Math.random() * 15 + 10) + 's';
+    particle.style.animationDelay = Math.random() * 10 + 's';
+    particle.style.width = (Math.random() * 4 + 2) + 'px';
+    particle.style.height = particle.style.width;
+    container.appendChild(particle);
+  }
+}
+createParticles();
+
+// ===== Navigation / Routing =====
+function navigate(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-links a').forEach(a => a.classList.remove('active'));
+  const targetPage = document.getElementById('page-' + page);
+  if (targetPage) {
+    targetPage.classList.add('active');
+    window.location.hash = page;
+    const navLink = document.querySelector(`.nav-links a[data-page="${page}"]`);
+    if (navLink) navLink.classList.add('active');
+    window.scrollTo(0, 0);
+    triggerRevealAnimations();
+  }
+  // Close mobile menu
+  document.getElementById('navLinks').classList.remove('active');
+  document.getElementById('hamburger').classList.remove('active');
+}
+
+function handleHashChange() {
+  const hash = window.location.hash.replace('#', '') || 'home';
+  if (hash.startsWith('article-')) {
+    const id = parseInt(hash.replace('article-', ''));
+    showArticleDetail(id);
+  } else {
+    navigate(hash);
+  }
+}
+
+window.addEventListener('hashchange', handleHashChange);
+window.addEventListener('load', async () => {
+  // 尝试从后端加载文章
+  const remotePosts = await loadPostsFromAPI();
+  if (remotePosts && remotePosts.length > 0) {
+    articles.length = 0;
+    articles.push(...remotePosts);
+  }
+  renderArticles();
+  handleHashChange();
+  checkAuth();
+  loadAdminPosts();
+});
+
+// ===== Render Articles =====
+function renderArticles() {
+  const grid = document.getElementById('articlesGrid');
+  grid.innerHTML = articles.map(article => `
+    <div class="article-card reveal" onclick="showArticleDetail(${article.id})">
+      <div class="card-cover">
+        <div class="gradient-bg" style="background:${article.gradient}"></div>
+      </div>
+      <div class="card-body">
+        <div class="card-tags">${article.tags.map(t => `<span class="tag">${t}</span>`).join('')}</div>
+        <h3 class="card-title">${article.title}</h3>
+        <p class="card-excerpt">${article.excerpt}</p>
+        <div class="card-meta">
+          <div class="card-author">
+            <span class="avatar">${article.avatar}</span>
+            <span>${article.author}</span>
+          </div>
+          <span>${article.date}</span>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ===== Article Detail =====
+function showArticleDetail(id) {
+  const article = articles.find(a => a.id === id);
+  if (!article) return;
+
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-detail').classList.add('active');
+  window.location.hash = 'article-' + id;
+
+  document.getElementById('articleContent').innerHTML = `
+    <h1>${article.title}</h1>
+    <div class="article-meta">
+      <span>✍️ ${article.author}</span>
+      <span>📅 ${article.date}</span>
+      <span>⏱️ ${article.readTime}</span>
+      <span>📂 ${article.category}</span>
+    </div>
+    <div class="article-body">${article.content}</div>
+  `;
+
+  // Generate TOC
+  const headings = article.content.match(/<h2>(.*?)<\/h2>/g) || [];
+  document.getElementById('articleSidebar').innerHTML = `
+    <div class="toc-title">目录导航</div>
+    <ul class="toc-list">
+      ${headings.map(h => `<li>${h.replace(/<\/?h2>/g, '')}</li>`).join('')}
+    </ul>
+  `;
+
+  // Related articles
+  const related = articles.filter(a => a.id !== id).slice(0, 3);
+  document.getElementById('relatedArticles').innerHTML = related.map(a => `
+    <div class="related-card" onclick="showArticleDetail(${a.id})">
+      <h4>${a.title}</h4>
+      <p>${a.category} · ${a.readTime}</p>
+    </div>
+  `).join('');
+
+  window.scrollTo(0, 0);
+}
+
+// ===== Modal =====
+function openModal(tab = 'login') {
+  document.getElementById('modalOverlay').classList.add('active');
+  switchTab(tab);
+  document.body.style.overflow = 'hidden';
+}
+
+function closeModal() {
+  document.getElementById('modalOverlay').classList.remove('active');
+  document.body.style.overflow = '';
+}
+
+function switchTab(tab) {
+  document.querySelectorAll('.modal-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.modal-form').forEach(f => f.classList.remove('active'));
+  if (tab === 'login') {
+    document.querySelectorAll('.modal-tab')[0].classList.add('active');
+    document.getElementById('loginForm').classList.add('active');
+  } else {
+    document.querySelectorAll('.modal-tab')[1].classList.add('active');
+    document.getElementById('registerForm').classList.add('active');
+  }
+}
+
+// Close modal on overlay click
+document.getElementById('modalOverlay').addEventListener('click', (e) => {
+  if (e.target === e.currentTarget) closeModal();
+});
+
+// ===== Theme Toggle =====
+document.getElementById('themeToggle').addEventListener('click', () => {
+  const html = document.documentElement;
+  const current = html.getAttribute('data-theme');
+  const next = current === 'light' ? 'dark' : 'light';
+  html.setAttribute('data-theme', next === 'dark' ? '' : 'light');
+  if (next === 'dark') html.removeAttribute('data-theme');
+  document.getElementById('themeToggle').textContent = next === 'light' ? '☀️' : '🌙';
+});
+
+// ===== Hamburger Menu =====
+document.getElementById('hamburger').addEventListener('click', () => {
+  document.getElementById('hamburger').classList.toggle('active');
+  document.getElementById('navLinks').classList.toggle('active');
+});
+
+// Nav link clicks on mobile
+document.querySelectorAll('.nav-links a').forEach(link => {
+  link.addEventListener('click', (e) => {
+    e.preventDefault();
+    const page = link.getAttribute('data-page');
+    navigate(page);
+  });
+});
+
+// ===== Intersection Observer for Reveal Animations =====
+function triggerRevealAnimations() {
+  const reveals = document.querySelectorAll('.reveal');
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('visible');
+      }
+    });
+  }, { threshold: 0.1 });
+  reveals.forEach(el => observer.observe(el));
+}
+triggerRevealAnimations();
+
+// ===== Keyboard shortcut: ESC closes modal =====
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') closeModal();
+});
+</script>
+</body>
+</html>
