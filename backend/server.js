@@ -29,6 +29,16 @@ app.get('/api/stats', (req, res) => {
   res.json({ posts, users, categories });
 });
 
-app.listen(3000, () => {
-  console.log('Server running on http://localhost:3000');
+// 托管前端静态文件
+const path = require('path');
+app.use(express.static(path.join(__dirname, '../frontend')));
+app.get('*', (req, res) => {
+  if (!req.path.startsWith('/api')) {
+    res.sendFile(path.join(__dirname, '../frontend/index.html'));
+  }
+});
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`Server running on http://0.0.0.0:${PORT}`);
 });
