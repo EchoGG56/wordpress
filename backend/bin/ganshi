@@ -1,0 +1,385 @@
+#!/usr/bin/env node
+
+const https = require('https');
+const fs = require('fs');
+const path = require('path');
+
+const TIANGAN = ['甲', '乙', '丙', '丁', '戊', '己', '庚', '辛', '壬', '癸'];
+const DIZHI = ['子', '丑', '寅', '卯', '辰', '巳', '午', '未', '申', '酉', '戌', '亥'];
+const ZODIACS = ['鼠', '牛', '虎', '兔', '龙', '蛇', '马', '羊', '猴', '鸡', '狗', '猪'];
+
+const APIS = [
+  {
+    name: 'sojson',
+    url: 'https://www.sojson.com/open/api/lunar/json.shtml',
+    headers: {
+      'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+    },
+    buildUrl: function(date) {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      return `${this.url}?date=${year}-${month}-${day}`;
+    },
+    parse: function(data) {
+      return {
+        year: data.cyclicalYear + '年',
+        month: data.cyclicalMonth + '月',
+        day: data.cyclicalDay + '日',
+        lunarDate: `${data.cnmonth}${data.cnday}`,
+        weekday: data.week,
+        shengxiao: data.animal,
+        yi: data.suit,
+        ji: data.taboo,
+        jieqi: Object.keys(data.jieqi || {}).length > 0 ? Object.values(data.jieqi).join('、') : null
+      };
+    }
+  },
+  {
+    name: 'apihz',
+    url: 'https://cn.apihz.cn/api/time/getzdday.php',
+    headers: {
+      'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+    },
+    buildUrl: function(date) {
+      const year = date.getFullYear();
+      const month = date.getMonth() + 1;
+      const day = date.getDate();
+      return `${this.url}?id=88888888&key=88888888&nian=${year}&yue=${month}&ri=${day}`;
+    },
+    parse: function(data) {
+      return {
+        year: data.ganzhinian,
+        month: data.ganzhiyue,
+        day: data.ganzhiri,
+        lunarDate: `${data.nyue}${data.nri}`,
+        weekday: data.xingqi,
+        shengxiao: data.shengxiao,
+        yi: data.yi,
+        ji: data.ji,
+        xiangchong: data.xiangchong,
+        jieqi: data.jieqi
+      };
+    }
+  }
+];
+
+function getGanZhiLocal(date) {
+  const year = date.getFullYear();
+  const month = date.getMonth() + 1;
+  const day = date.getDate();
+  
+  const yearGanIndex = (year - 4) % 10;
+  const yearZhiIndex = (year - 4) % 12;
+  const yearGanZhi = TIANGAN[yearGanIndex] + DIZHI[yearZhiIndex];
+  
+  const monthGanZhi = getMonthGanZhi(year, month, day);
+  const dayGanZhi = getDayGanZhi(year, month, day);
+  
+  const zodiacIndex = (year - 4) % 12;
+  
+  const weekdays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  
+  return {
+    year: yearGanZhi + '年',
+    month: monthGanZhi + '月',
+    day: dayGanZhi + '日',
+    lunarDate: null,
+    weekday: weekdays[date.getDay()],
+    shengxiao: ZODIACS[zodiacIndex],
+    yi: null,
+    ji: null,
+    xiangchong: null,
+    jieqi: null,
+    source: 'local'
+  };
+}
+
+function getMonthGanZhi(year, month, day) {
+  const monthGanZhiMap = {
+    2026: {
+      1: '辛丑', 2: '壬寅', 3: '癸卯', 4: '甲辰', 5: '癸巳', 6: '甲午',
+      7: '乙未', 8: '丙申', 9: '丁酉', 10: '戊戌', 11: '己亥', 12: '庚子'
+    },
+    2025: {
+      1: '丙子', 2: '丁丑', 3: '戊寅', 4: '乙卯', 5: '庚辰', 6: '辛巳',
+      7: '壬午', 8: '癸未', 9: '甲申', 10: '乙酉', 11: '丙戌', 12: '丁亥'
+    },
+    2024: {
+      1: '甲子', 2: '乙丑', 3: '丙寅', 4: '丁卯', 5: '戊辰', 6: '己巳',
+      7: '庚午', 8: '辛未', 9: '壬申', 10: '癸酉', 11: '甲戌', 12: '乙亥'
+    },
+    2023: {
+      1: '壬子', 2: '癸丑', 3: '甲寅', 4: '乙卯', 5: '丙辰', 6: '丁巳',
+      7: '戊午', 8: '己未', 9: '庚申', 10: '辛酉', 11: '壬戌', 12: '癸亥'
+    },
+    2022: {
+      1: '辛丑', 2: '壬寅', 3: '癸卯', 4: '甲辰', 5: '乙巳', 6: '丙午',
+      7: '丁未', 8: '戊申', 9: '己酉', 10: '庚戌', 11: '辛亥', 12: '壬子'
+    }
+  };
+  
+  if (monthGanZhiMap[year] && monthGanZhiMap[year][month]) {
+    return monthGanZhiMap[year][month];
+  }
+  
+  const yearGanIdx = (year - 4) % 10;
+  const solarTerms = [
+    { month: 2, day: 4 },
+    { month: 3, day: 6 },
+    { month: 4, day: 5 },
+    { month: 5, day: 6 },
+    { month: 6, day: 6 },
+    { month: 7, day: 7 },
+    { month: 8, day: 8 },
+    { month: 9, day: 8 },
+    { month: 10, day: 8 },
+    { month: 11, day: 7 },
+    { month: 12, day: 7 },
+    { month: 1, day: 6 }
+  ];
+  
+  let monthZhiIndex = 2;
+  for (let i = 0; i < solarTerms.length; i++) {
+    const term = solarTerms[i];
+    if (month > term.month || (month === term.month && day >= term.day)) {
+      monthZhiIndex = (2 + i) % 12;
+    }
+  }
+  
+  const ganOffset = yearGanIdx * 2;
+  const monthGanIndex = (ganOffset + monthZhiIndex - 2 + 10) % 10;
+  
+  return TIANGAN[monthGanIndex] + DIZHI[monthZhiIndex];
+}
+
+function getDayGanZhi(year, month, day) {
+  const knownDates = {
+    '2026-05-13': '丁亥',
+    '2026-05-12': '丙戌',
+    '2026-05-11': '乙酉',
+    '2026-05-10': '甲申',
+    '2026-05-09': '癸未',
+    '2026-05-08': '壬午',
+    '2026-05-07': '辛巳',
+    '2026-05-06': '庚辰',
+    '2026-05-05': '己卯',
+    '2026-05-04': '戊寅',
+    '2026-05-03': '丁丑',
+    '2026-05-02': '丙子',
+    '2026-05-01': '乙亥'
+  };
+  
+  const dateKey = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+  
+  if (knownDates[dateKey]) {
+    return knownDates[dateKey];
+  }
+  
+  const baseDate = new Date('2026-05-13');
+  const targetDate = new Date(year, month - 1, day);
+  const diffTime = targetDate.getTime() - baseDate.getTime();
+  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+  
+  const baseGanIdx = 3;
+  const baseZhiIdx = 11;
+  
+  const ganIdx = (baseGanIdx + diffDays + 10) % 10;
+  const zhiIdx = (baseZhiIdx + diffDays + 12) % 12;
+  
+  return TIANGAN[ganIdx] + DIZHI[zhiIdx];
+}
+
+async function fetchFromAPI(api, date) {
+  const url = api.buildUrl(date);
+  
+  return new Promise((resolve, reject) => {
+    const options = {
+      headers: api.headers || {}
+    };
+    
+    https.get(url, options, (res) => {
+      let data = '';
+      res.on('data', (chunk) => {
+        data += chunk;
+      });
+      res.on('end', () => {
+        try {
+          const result = JSON.parse(data);
+          if (result.status === 200 || result.code === 200 || result.message === 'success') {
+            const parsed = api.parse(result.status === 200 ? result.data : result.code === 200 ? result : result);
+            resolve({ ...parsed, source: api.name });
+          } else {
+            reject(new Error(`API返回错误: ${result.msg || result.message || '未知错误'}`));
+          }
+        } catch (error) {
+          reject(new Error('解析API响应失败: ' + error.message));
+        }
+      });
+    }).on('error', (error) => {
+      reject(error);
+    });
+  });
+}
+
+async function getGanZhi(date) {
+  for (const api of APIS) {
+    try {
+      const data = await fetchFromAPI(api, date);
+      return data;
+    } catch (error) {
+      console.warn(`API ${api.name} 调用失败: ${error.message}`);
+    }
+  }
+  
+  console.log('所有API调用失败，使用本地算法计算...');
+  return getGanZhiLocal(date);
+}
+
+function printHelp() {
+  const helpText = `
+干支查询工具 - ganshi
+
+用法:
+  ganshi [选项] [日期]
+
+选项:
+  -h, --help          显示帮助信息
+  -v, --version       显示版本信息
+  -s, --simple        简化输出模式
+  -l, --local         强制使用本地算法（不调用API）
+
+日期格式:
+  YYYY-MM-DD 或 YYYY/MM/DD
+  示例: ganshi 2026-05-13
+
+示例:
+  ganshi              # 查询今天的干支
+  ganshi 2026-05-13   # 查询指定日期的干支
+  ganshi -s           # 简化输出模式
+  ganshi -l           # 使用本地算法
+`;
+  console.log(helpText);
+}
+
+function parseDate(dateStr) {
+  if (!dateStr) {
+    return new Date();
+  }
+  
+  const formats = [
+    /^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$/,
+    /^(\d{4})(\d{2})(\d{2})$/
+  ];
+  
+  for (const format of formats) {
+    const match = dateStr.match(format);
+    if (match) {
+      const year = parseInt(match[1]);
+      const month = parseInt(match[2]) - 1;
+      const day = parseInt(match[3]);
+      const date = new Date(year, month, day);
+      if (date.getFullYear() === year && date.getMonth() === month && date.getDate() === day) {
+        return date;
+      }
+    }
+  }
+  
+  return null;
+}
+
+async function main() {
+  const args = process.argv.slice(2);
+  
+  let targetDate = new Date();
+  let simpleMode = false;
+  let useLocal = false;
+  let showHelp = false;
+  let showVersion = false;
+  
+  for (let i = 0; i < args.length; i++) {
+    const arg = args[i];
+    if (arg === '-h' || arg === '--help') {
+      showHelp = true;
+    } else if (arg === '-v' || arg === '--version') {
+      showVersion = true;
+    } else if (arg === '-s' || arg === '--simple') {
+      simpleMode = true;
+    } else if (arg === '-l' || arg === '--local') {
+      useLocal = true;
+    } else {
+      const parsed = parseDate(arg);
+      if (parsed) {
+        targetDate = parsed;
+      } else {
+        console.error(`错误: 无效的日期格式 "${arg}"`);
+        console.error('使用 ganshi -h 查看帮助');
+        process.exit(1);
+      }
+    }
+  }
+  
+  if (showHelp) {
+    printHelp();
+    process.exit(0);
+  }
+  
+  if (showVersion) {
+    const pkgPath = path.join(__dirname, '../package.json');
+    if (fs.existsSync(pkgPath)) {
+      const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
+      console.log(`ganshi v${pkg.version}`);
+    } else {
+      console.log('ganshi v1.0.0');
+    }
+    process.exit(0);
+  }
+  
+  const options = { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' };
+  const dateStr = targetDate.toLocaleDateString('zh-CN', options);
+  
+  try {
+    const data = useLocal ? getGanZhiLocal(targetDate) : await getGanZhi(targetDate);
+    
+    if (simpleMode) {
+      console.log(`${data.year} ${data.month} ${data.day}`);
+    } else {
+      console.log('══════════════════════');
+      console.log('       今日干支查询      ');
+      console.log('══════════════════════');
+      console.log(` 日期：${dateStr}`);
+      if (data.lunarDate) {
+        console.log(` 农历：${data.lunarDate}`);
+      }
+      if (data.shengxiao) {
+        console.log(` 生肖：${data.shengxiao}`);
+      }
+      if (data.jieqi) {
+        console.log(` 节气：${data.jieqi}`);
+      }
+      console.log('──────────────────────');
+      console.log(` 年柱：${data.year}`);
+      console.log(` 月柱：${data.month}`);
+      console.log(` 日柱：${data.day}`);
+      if (data.xiangchong) {
+        console.log(` 相冲：${data.xiangchong}`);
+      }
+      if (data.yi || data.ji) {
+        console.log('──────────────────────');
+        if (data.yi) {
+          console.log(` 宜：${data.yi}`);
+        }
+        if (data.ji) {
+          console.log(` 忌：${data.ji}`);
+        }
+      }
+      console.log('══════════════════════');
+      console.log(` 数据来源：${data.source.toUpperCase()}${data.source === 'local' ? ' 算法' : ' API'}`);
+    }
+  } catch (error) {
+    console.error('获取干支信息失败:', error.message);
+    process.exit(1);
+  }
+}
+
+main();
